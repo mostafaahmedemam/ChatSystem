@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    volumes:
+      - mysql_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: chat_system_production
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+
+  redis:
+    image: redis:6.0
+    volumes:
+      - redis_data:/data
+    command: redis-server
+    ports:
+      - '6379:6379'
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.2
+    environment:
+      - discovery.type=single-node
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+
+  web:
+    build: .
+    command: bundle exec rails server -b 0.0.0.0 && rails db:migrate 
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+      - redis
+      - elasticsearch
+
+  # worker:
+  #   build: .
+  #   command: bundle exec sidekiq
+  #   depends_on:
+  #     - db
+  #     - redis
+  #     - elasticsearch
+
+volumes:
+  mysql_data:
+  redis_data:
+  es_data:
